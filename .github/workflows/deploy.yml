@@ -41,7 +41,8 @@ jobs:
             --set-default # <--- CORRECTED FLAG
 
 
-      # 6. Deploy the project metadata to the org
+            # 6. Deploy the project metadata to the org
       - name: Deploy to Org
-        run: sf project deploy start --source-dir force-app # Adjust source-dir if needed
+        run: sf project deploy start --source-dir force-app --target-org ${{ secrets.SF_USERNAME }} # <--- CORRECTED LINE
+
 
