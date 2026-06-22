@@ -26,13 +26,11 @@ jobs:
         run: npm install --global @salesforce/cli
 
       # 4. Create the server.key file for authentication
-      #    This uses the GitHub Secret you created
       - name: Populate private key
         run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
 
-      # 5. Authenticate to Salesforce and Deploy
-      #    Commands are combined to ensure they run in the same shell context.
-      - name: Authenticate to Salesforce and Deploy
+      # 5. Authenticate, Generate Manifest, and Deploy
+      - name: Authenticate, Generate Manifest, and Deploy
         run: |
           # Authenticate to the Salesforce Org using JWT
           sf org login jwt \
@@ -41,6 +39,8 @@ jobs:
             --jwt-key-file server.key \
             --instance-url ${{ secrets.SF_LOGIN_URL }}
 
-          # Deploy the project metadata to the org, explicitly targeting the username
-          sf project deploy start --source-dir force-app --target-org ${{ secrets.SF_USERNAME }}
+          # Explicitly generate a manifest (package.xml) from the source code
+          sf project generate manifest --source-dir force-app --name MyPackage
 
+          # Deploy using the generated manifest file, which forces deployment of all listed components
+          sf project deploy start --manifest MyPackage/package.xml --target-org ${{ secrets.SF_USERNAME }}
