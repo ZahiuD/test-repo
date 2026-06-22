@@ -30,7 +30,7 @@ jobs:
       - name: Populate private key
         run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
 
-      # 5. Authenticate to the Salesforce Org using JWT
+           # 5. Authenticate to the Salesforce Org using JWT
       - name: Authenticate to Salesforce Org
         run: |
           sf org login jwt \
@@ -38,7 +38,8 @@ jobs:
             --client-id ${{ secrets.SF_CLIENT_ID }} \
             --jwt-key-file server.key \
             --instance-url ${{ secrets.SF_LOGIN_URL }} \
-            --set-default-dev-hub
+            --set-default # <--- CORRECTED FLAG
+
 
       # 6. Deploy the project metadata to the org
       - name: Deploy to Org
