@@ -1,0 +1,46 @@
+name: Deploy to Salesforce
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Set up Node.js, required for Salesforce CLI
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 3. Install the Salesforce CLI
+      - name: Install Salesforce CLI
+        run: npm install --global @salesforce/cli
+
+      # 4. Create the server.key file for authentication
+      #    This uses the GitHub Secret you created
+      - name: Populate private key
+        run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
+
+      # 5. Authenticate to the Salesforce Org using JWT
+      - name: Authenticate to Salesforce Org
+        run: |
+          sf org login jwt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --client-id ${{ secrets.SF_CLIENT_ID }} \
+            --jwt-key-file server.key \
+            --instance-url ${{ secrets.SF_LOGIN_URL }} \
+            --set-default-dev-hub
+
+      # 6. Deploy the project metadata to the org
+      - name: Deploy to Org
+        run: sf project deploy start --source-dir force-app # Adjust source-dir if needed
+
