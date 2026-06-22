@@ -39,8 +39,8 @@ jobs:
             --jwt-key-file server.key \
             --instance-url ${{ secrets.SF_LOGIN_URL }}
 
-          # Explicitly generate a manifest (package.xml) from the source code
-          sf project generate manifest --source-dir force-app --name MyPackage
+          # Generate a default package.xml in the root directory from the source code
+          sf project generate manifest --source-dir force-app
 
-          # Deploy using the generated manifest file, which forces deployment of all listed components
-          sf project deploy start --manifest MyPackage/package.xml --target-org ${{ secrets.SF_USERNAME }}
+          # Deploy using the default package.xml, which forces deployment of all components
+          sf project deploy start --manifest package.xml --target-org ${{ secrets.SF_USERNAME }}
