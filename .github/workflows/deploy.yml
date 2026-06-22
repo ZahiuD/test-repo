@@ -33,18 +33,20 @@ jobs:
       - name: Populate private key
         run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
 
-      # 6. Authenticate and Deploy using the Metadata API (MDAPI) format
-      - name: Authenticate and Deploy using MDAPI
-        run: |
-          # Authenticate to the Salesforce Org using JWT
-          sf org login jwt \
-            --username ${{ secrets.SF_USERNAME }} \
-            --client-id ${{ secrets.SF_CLIENT_ID }} \
-            --jwt-key-file server.key \
-            --instance-url ${{ secrets.SF_LOGIN_URL }}
+     # 6. Convert the source code into the Metadata API format
+- name: Convert to Metadata API Format
+  run: |
+    sf project convert mdapi --root-dir force-app --output-dir mdapi-deploy
+    
+    # Verify the conversion was successful
+    if [ ! -d "mdapi-deploy" ] || [ -z "$(ls -A mdapi-deploy)" ]; then
+      echo "Error: No metadata to deploy. Conversion produced empty output."
+      exit 1
+    fi
+    echo "Metadata conversion successful. Contents:"
+    ls -R mdapi-deploy
 
-          # Convert the source code into the Metadata API format
-          sf project convert mdapi --root-dir force-app --output-dir mdapi-deploy
-
-          # Deploy the converted metadata. This command does not use change detection.
-          sf project deploy mdapi --deploy-dir mdapi-deploy --target-org ${{ secrets.SF_USERNAME }}
+# 7. Deploy the converted metadata
+- name: Deploy to Salesforce
+  run: |
+    sf project deploy mdapi --deploy-dir mdapi-deploy --target-org ${{ secrets.SF_USERNAME }}
