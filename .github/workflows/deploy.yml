@@ -3,50 +3,53 @@ name: Deploy to Salesforce
 on:
   push:
     branches:
-      - main # Or your default branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # 1. Check out the repository code
+
+      # 1. Checkout
       - name: Check out code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. DEBUGGING STEP: List all files recursively
-      - name: List files in the workspace
-        run: ls -R
-
-      # 3. Set up Node.js, required for Salesforce CLI
+      # 2. Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # 4. Install the Salesforce CLI
+      # 3. Salesforce CLI
       - name: Install Salesforce CLI
         run: npm install --global @salesforce/cli
 
-      # 5. Create the server.key file for authentication
+      # 4. Write private key
       - name: Populate private key
         run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
 
-      # 6. Convert the source code into the Metadata API format
-      - name: Convert to Metadata API Format
+      # 5. Authenticate via JWT Bearer Flow
+      - name: Authenticate to Salesforce (JWT)
         run: |
-          sf project convert mdapi --root-dir force-app --output-dir mdapi-deploy
-          
-          # Verify the conversion was successful
-          if [ ! -d "mdapi-deploy" ] || [ -z "$(ls -A mdapi-deploy)" ]; then
-            echo "Error: No metadata to deploy. Conversion produced empty output."
-            exit 1
-          fi
-          echo "Metadata conversion successful. Contents:"
-          ls -R mdapi-deploy
+          sf org login jwt \
+            --username "${{ secrets.SF_USERNAME }}" \
+            --jwt-key-file server.key \
+            --client-id "${{ secrets.SF_CLIENT_ID }}" \
+            --instance-url "${{ secrets.SF_INSTANCE_URL }}" \
+            --alias target-org \
+            --set-default
 
-      # 7. Deploy the converted metadata
+      # 6. Deploy source directly (no mdapi conversion needed)
       - name: Deploy to Salesforce
         run: |
-          sf project deploy mdapi --deploy-dir mdapi-deploy --target-org ${{ secrets.SF_USERNAME }}
+          sf project deploy start \
+            --source-dir force-app \
+            --target-org target-org \
+            --wait 30
+
+      # 7. Always clean up the private key
+      - name: Clean up private key
+        if: always()
+        run: rm -f server.key
