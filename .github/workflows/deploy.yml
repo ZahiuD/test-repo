@@ -30,19 +30,17 @@ jobs:
       - name: Populate private key
         run: echo "${{ secrets.SF_SERVER_KEY }}" > server.key
 
-           # 5. Authenticate to the Salesforce Org using JWT
-      - name: Authenticate to Salesforce Org
+      # 5. Authenticate to Salesforce and Deploy
+      #    Commands are combined to ensure they run in the same shell context.
+      - name: Authenticate to Salesforce and Deploy
         run: |
+          # Authenticate to the Salesforce Org using JWT
           sf org login jwt \
             --username ${{ secrets.SF_USERNAME }} \
             --client-id ${{ secrets.SF_CLIENT_ID }} \
             --jwt-key-file server.key \
-            --instance-url ${{ secrets.SF_LOGIN_URL }} \
-            --set-default # <--- CORRECTED FLAG
+            --instance-url ${{ secrets.SF_LOGIN_URL }}
 
-
-            # 6. Deploy the project metadata to the org
-      - name: Deploy to Org
-        run: sf project deploy start --source-dir force-app --target-org ${{ secrets.SF_USERNAME }} # <--- CORRECTED LINE
-
+          # Deploy the project metadata to the org, explicitly targeting the username
+          sf project deploy start --source-dir force-app --target-org ${{ secrets.SF_USERNAME }}
 
